@@ -1,9 +1,9 @@
 {
   "network": "sepolia",
-  "splitMainAddress": "'0x54E4a6014D36c381fC43b7E24A1492F556139a6F'",
+  "splitMainAddress": "'0x9B331E557cFA33784DC89b6e63F20070022B33B9'",
   "vestingFactoryAddress": "'0x0a2841630f198745a55c4dab3fe98f77271949e5'",
   "waterfallFactoryAddress": "'0x4Df01754eBd055498C8087b1e9a5c7a9ad19b0F6'",
-  "liquidSplitFactoryAddress": "'0xb3Af150A5902e06373A2D3f177d85435A48c6b33'",
+  "liquidSplitFactoryAddress": "'0x3BfDBBD891CcfEDcaF1D3Bf806A6Ee0AFA95d2a9'",
   "recoupAddress": "'0x8Cbb4e187ce8A29BACC13Fd999a107f3c4b46D3B'",
   "uniV3OracleFactoryAddress": "'0x074827E8bD77B0A66c6008a51AF9BD1F33105caf'",
   "swapperFactoryAddress": "'0xa244bbe019cf1BA177EE5A532250be2663Fb55cA'",

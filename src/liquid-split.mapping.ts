@@ -10,10 +10,6 @@ import {
   TransferBatch,
   Transfer,
 } from '../generated/LiquidSplit/FullLiquidSplit'
-import {
-  ChaosSplit,
-  Transfer as TransferChaos,
-} from '../generated/Chaos/ChaosSplit'
 import { LiquidSplit as LiquidSplitTemplate } from '../generated/templates'
 import {
   LiquidSplit,
@@ -205,77 +201,6 @@ export function handleTransferBatch1155(event: TransferBatch): void {
   )
 }
 
-export function handleTransferChaos721(event: TransferChaos): void {
-  // Only the first 1000 tokens are part of the chaos liquid split
-  let shouldSkip = event.params.tokenId > BigInt.fromI32(999)
-  if (shouldSkip) return
-
-  let liquidSplitId = event.address.toHexString()
-  // Cant use getLiquidSplit because it will throw an error if it doesn't exist, which it won't
-  // on the first execution of this.
-  let liquidSplit = LiquidSplit.load(liquidSplitId)
-
-  // Create liquid split if missing (only needed for first transfer event)
-  if (!liquidSplit) {
-    let isChaosSplit = true
-    let isFactoryGenerated = false
-    handleLiquidSplitCreation(
-      event.address,
-      isFactoryGenerated,
-      event.block.timestamp,
-      event.transaction.hash.toHexString(),
-      event.logIndex,
-      event.block.number.toI32(),
-      isChaosSplit,
-    )
-  }
-
-  // Handle transfer
-  let blockNumber = event.block.number.toI32()
-  let timestamp = event.block.timestamp
-  let chaosContract = ChaosSplit.bind(event.address)
-
-  let fromAddressString = event.params.from.toHexString()
-  if (fromAddressString != ZERO_ADDRESS) {
-    let fromHolder = getHolder(
-      fromAddressString,
-      liquidSplitId,
-      blockNumber,
-      timestamp,
-    )
-    fromHolder.ownership =
-      (chaosContract.superchargeBalances(event.params.from) *
-        CHAOS_MULTIPLIER) /
-      CHAOS_TOTAL_SUPPLY
-    fromHolder.save()
-  }
-
-  let toAddressString = event.params.to.toHexString()
-  if (toAddressString != ZERO_ADDRESS) {
-    let toHolder = getHolder(
-      toAddressString,
-      liquidSplitId,
-      blockNumber,
-      timestamp,
-    )
-    toHolder.ownership =
-      (chaosContract.superchargeBalances(event.params.to) * CHAOS_MULTIPLIER) /
-      CHAOS_TOTAL_SUPPLY
-    toHolder.save()
-  }
-
-  // Save event
-  saveTransferEvents(
-    liquidSplitId,
-    fromAddressString,
-    toAddressString,
-    BigInt.fromI64(1),
-    event.block.timestamp,
-    event.transaction.hash.toHexString(),
-    event.logIndex,
-  )
-}
-
 export function handleTransfer721(event: Transfer): void {
   let liquidSplitId = event.address.toHexString()
 
@@ -398,7 +323,12 @@ function updateHolderOwnershipNonFactoryLiquidSplit(
   if (fromAddressString == ZERO_ADDRESS || toAddressString == ZERO_ADDRESS) {
     // If it's a mint or burn, need to update all holders ownership
     if (fromAddressString != ZERO_ADDRESS) {
-      let fromHolder = getHolder(fromAddressString, liquidSplitId, blockNumber, timestamp)
+      let fromHolder = getHolder(
+        fromAddressString,
+        liquidSplitId,
+        blockNumber,
+        timestamp,
+      )
       let ownership = liquidSplitContract.scaledPercentBalanceOf(fromAddress)
       if (ownership == ZERO) {
         store.remove('Holder', fromHolder.id)
@@ -407,9 +337,14 @@ function updateHolderOwnershipNonFactoryLiquidSplit(
         fromHolder.save()
       }
     }
-  
+
     if (toAddressString != ZERO_ADDRESS) {
-      let toHolder = getHolder(toAddressString, liquidSplitId, blockNumber, timestamp)
+      let toHolder = getHolder(
+        toAddressString,
+        liquidSplitId,
+        blockNumber,
+        timestamp,
+      )
       let ownership = liquidSplitContract.scaledPercentBalanceOf(toAddress)
       if (ownership == ZERO) {
         store.remove('Holder', toHolder.id)
@@ -424,14 +359,24 @@ function updateHolderOwnershipNonFactoryLiquidSplit(
     for (let i = 0; i < holders.length; i++) {
       let holder = holders[i]
       // Only update if it's not the from/to address (i.e. we haven't already updated it)
-      if (holder.account != fromAddressString && holder.account != toAddressString) {
-        holder.ownership = liquidSplitContract.scaledPercentBalanceOf(Address.fromString(holder.account))
+      if (
+        holder.account != fromAddressString &&
+        holder.account != toAddressString
+      ) {
+        holder.ownership = liquidSplitContract.scaledPercentBalanceOf(
+          Address.fromString(holder.account),
+        )
         holder.save()
       }
     }
   } else {
     // if it's a transfer, just update the from/to ownership
-    let fromHolder = getHolder(fromAddressString, liquidSplitId, blockNumber, timestamp)
+    let fromHolder = getHolder(
+      fromAddressString,
+      liquidSplitId,
+      blockNumber,
+      timestamp,
+    )
     let fromOwnership = liquidSplitContract.scaledPercentBalanceOf(fromAddress)
     if (fromOwnership == ZERO) {
       store.remove('Holder', fromHolder.id)
@@ -439,8 +384,13 @@ function updateHolderOwnershipNonFactoryLiquidSplit(
       fromHolder.ownership = fromOwnership
       fromHolder.save()
     }
-  
-    let toHolder = getHolder(toAddressString, liquidSplitId, blockNumber, timestamp)
+
+    let toHolder = getHolder(
+      toAddressString,
+      liquidSplitId,
+      blockNumber,
+      timestamp,
+    )
     let toOwnership = liquidSplitContract.scaledPercentBalanceOf(toAddress)
     if (toOwnership == ZERO) {
       store.remove('Holder', toHolder.id)
